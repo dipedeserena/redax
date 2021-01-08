@@ -276,14 +276,17 @@ void StraxFormatter::AddFragmentToBuffer(std::string fragment, uint32_t ts, int 
   }
 }
 
-void StraxFormatter::ReceiveDatapackets(std::list<std::unique_ptr<data_packet>>& in, int bytes) {
-  {
-    const std::lock_guard<std::mutex> lk(fBufferMutex);
+int StraxFormatter::ReceiveDatapackets(std::list<std::unique_ptr<data_packet>>& in, int bytes) {
+  if (fBufferMutex.try_lock() {
+    //const std::lock_guard<std::mutex> lk(fBufferMutex);
     fBufferCounter[in.size()]++;
     fBuffer.splice(fBuffer.end(), in);
     fInputBufferSize += bytes;
+    fBufferMutex.unlock();
+    fCV.notify_one();
+    return 0;
   }
-  fCV.notify_one();
+  return 1;
 }
 
 void StraxFormatter::Process() {
