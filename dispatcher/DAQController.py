@@ -50,6 +50,7 @@ class DAQController():
         self.log = log
         self.time_between_commands = int(config['DEFAULT']['TimeBetweenCommands'])
         self.can_force_stop={k:True for k in detectors}
+        self.has_started_run_this_loop = False
 
     def SolveProblem(self, latest_status, goal_state):
         '''
@@ -83,6 +84,7 @@ class DAQController():
             if latest_status[det]['status'] == STATUS.IDLE:
                 self.can_force_stop[det] = True
                 self.error_stop_count[det] = 0
+        self.has_started_run_this_loop = False
 
         '''
         CASE 1: DETECTORS ARE INACTIVE
@@ -267,6 +269,9 @@ class DAQController():
         # make sure we don't rush things
         if command == 'start':
             dt_last = (now - self.last_command['arm'][detector]).total_seconds()
+            if self.has_started_run_this_loop:
+                return
+            self.has_started_run_this_loop = True
         elif command == 'arm':
             dt_last = (now - self.last_command['stop'][detector]).total_seconds()
         else:
